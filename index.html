@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Design Text-Generator</title>
+    <style>
+        :root {
+            --color-primary: #534326;
+            --color-secondary: #C5A391;
+            --color-accent: #A39D91;
+            --color-background-light: #F5F6F0;
+            --color-background-dark: #EFE6D5;
+            --color-text-dark: #333;
+            --color-text-light: #555;
+            --color-border: #ddd;
+            --color-success: #28a745;
+            --color-error: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--color-background-light);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--color-text-dark);
+        }
+
+        .container {
+            max-width: 1400px; /* Mehr Platz für den Text */
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex; /* Flexbox für Hauptinhalt */
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr; /* Input links, Output rechts (mehr Platz) */
+            gap: 0;
+            min-height: 70vh;
+        }
+
+        .input-section {
+            padding: 40px;
+            border-right: 2px solid var(--color-background-dark);
+            background: var(--color-background-dark);
+        }
+
+        .output-section {
+            padding: 40px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 1.6em;
+            color: var(--color-primary);
+            margin-bottom: 25px;
+            font-weight: 600;
+            border-bottom: 3px solid var(--color-secondary);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--color-text-light);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background-color: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+            box-shadow: 0 0 0 3px rgba(197, 163, 145, 0.2);
+        }
+
+        .centers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsiveres Grid */
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .center-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .center-item input[type="checkbox"] {
+            width: 20px; /* Grössere Checkboxen */
+            height: 20px;
+            accent-color: var(--color-primary);
+            cursor: pointer;
+        }
+
+        .center-item label {
+            margin-bottom: 0; /* Label für Checkbox anpassen */
+            font-weight: normal;
+            color: var(--color-text-dark);
+            cursor: pointer;
+        }
+
+        .btn {
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(83, 67, 38, 0.2);
+            background-color: #6a563a; /* Leichter Hover-Effekt */
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background-color: var(--color-accent);
+            margin-top: 15px; /* Etwas mehr Abstand */
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 8px 20px rgba(163, 157, 145, 0.2);
+            background-color: #b7b0a5;
+        }
+
+        #generatedText {
+            width: 100%;
+            flex-grow: 1; /* Nimmt verfügbaren Platz ein */
+            min-height: 400px; /* Mindesthöhe beibehalten */
+            padding: 20px;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            font-family: 'Roboto Mono', 'Courier New', monospace; /* Monospace Font für Code/Textausgabe */
+            font-size: 15px;
+            line-height: 1.7;
+            resize: vertical;
+            background: var(--color-background-light);
+            color: var(--color-text-dark);
+            margin-bottom: 20px; /* Abstand zu den Buttons */
+        }
+
+        .status {
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: var(--color-success);
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: var(--color-error);
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 992px) { /* Tablet-Ansicht */
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .input-section {
+                border-right: none;
+                border-bottom: 2px solid var(--color-background-dark);
+            }
+        }
+
+        @media (max-width: 768px) { /* Mobile Ansicht */
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .input-section, .output-section {
+                padding: 25px;
+            }
+
+            .centers-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: var(--color-primary);
+            font-weight: 600;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Human Design Text-Generator</h1>
+            <p>Erstelle personalisierte Human Design Readings</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title">Persönliche Daten</h2>
+
+                <div class="form-group">
+                    <label for="clientName">Name der Person:</label>
+                    <input type="text" id="clientName" placeholder="Vollständiger Name eingeben" value="[Dein Name]">
+                </div>
+
+                <div class="form-group">
+                    <label for="birthDate">Geburtsdatum:</label>
+                    <input type="date" id="birthDate">
+                </div>
+
+                <div class="form-group">
+                    <label for="birthPlace">Geburtsort:</label>
+                    <input type="text" id="birthPlace" placeholder="Stadt, Land" value="Oberkirch, Schweiz">
+                </div>
+
+                <h2 class="section-title">Human Design Parameter</h2>
+
+                <div class="form-group">
+                    <label for="hdType">Human Design Typ:</label>
+                    <select id="hdType">
+                        <option value="">Bitte wählen...</option>
+                        <option value="manifestor">Manifestor</option>
+                        <option value="generator">Generator</option>
+                        <option value="manifesting-generator">Manifestierender Generator</option>
+                        <option value="projektor">Projektor</option>
+                        <option value="reflektor">Reflektor</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="authority">Autorität:</label>
+                    <select id="authority">
+                        <option value="">Bitte wählen...</option>
+                        <option value="sakral">Sakral</option>
+                        <option value="solar-plexus">Solar Plexus</option>
+                        <option value="milz">Milz</option>
+                        <option value="herz">Herz/Ego</option>
+                        <option value="lunar">Lunar</option>
+                        <option value="mental">Mental</option>
+                        <option value="umwelt">Umwelt</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="profile">Profil:</label>
+                    <select id="profile">
+                        <option value="">Bitte wählen...</option>
+                        <option value="1/3">1/3 Erforscher/Märtyrer</option>
+                        <option value="1/4">1/4 Erforscher/Opportunist</option>
+                        <option value="2/4">2/4 Eremit/Opportunist</option>
+                        <option value="2/5">2/5 Eremit/Häretiker</option>
+                        <option value="3/5">3/5 Märtyrer/Häretiker</option>
+                        <option value="3/6">3/6 Märtyrer/Rollenvorbild</option>
+                        <option value="4/6">4/6 Opportunist/Rollenvorbild</option>
+                        <option value="4/1">4/1 Opportunist/Erforscher</option>
+                        <option value="5/1">5/1 Häretiker/Erforscher</option>
+                        <option value="5/2">5/2 Häretiker/Eremit</option>
+                        <option value="6/2">6/2 Rollenvorbild/Eremit</option>
+                        <option value="6/3">6/3 Rollenvorbild/Märtyrer</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Definierte Zentren:</label>
+                    <div class="centers-grid">
+                        <div class="center-item">
+                            <input type="checkbox" id="center-kopf" value="kopf">
+                            <label for="center-kopf">Kopf</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-ajna" value="ajna">
+                            <label for="center-ajna">Ajna</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-hals" value="hals">
+                            <label for="center-hals">Hals</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-g" value="g">
+                            <label for="center-g">G-Zentrum</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-herz" value="herz">
+                            <label for="center-herz">Herz/Ego</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-milz" value="milz">
+                            <label for="center-milz">Milz</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-sakral" value="sakral">
+                            <label for="center-sakral">Sakral</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-solarplexus" value="solarplexus">
+                            <label for="center-solarplexus">Solarplexus</label>
+                        </div>
+                        <div class="center-item">
+                            <input type="checkbox" id="center-wurzel" value="wurzel">
+                            <label for="center-wurzel">Wurzel</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="generateReading()">Reading generieren</button>
+            </div>
+
+            <div class="output-section">
+                <h2 class="section-title">Generiertes Reading</h2>
+
+                <div class="loading" id="loading">
+                    Generiere Reading...
+                </div>
+
+                <textarea id="generatedText" placeholder="Hier erscheint das generierte Human Design Reading..."></textarea>
+
+                <button class="btn btn-secondary" onclick="exportText()" id="exportBtn" style="display: none;">
+                    Als TXT-Datei exportieren
+                </button>
+
+                <div id="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let textModules = {}; // Wird von externer Datei geladen
+
+        async function loadTextModules() {
+            try {
+                const response = await fetch('textmodules.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                textModules = await response.json();
+                console.log('Textmodule erfolgreich geladen.');
+            } catch (error) {
+                console.error('Fehler beim Laden der Textmodule:', error);
+                showStatus('Fehler beim Laden der Textmodule. Bitte Seite neu laden.', 'error');
+            }
+        }
+
+        // Lade die Textmodule beim Start
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTextModules();
+            // Auto-resize für Textarea
+            const textarea = document.getElementById('generatedText');
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            // Setze Samuel's Daten als Standardwerte (nur einmalig, wenn das Feld leer ist)
+            const clientNameInput = document.getElementById('clientName');
+            if (!clientNameInput.value) {
+                clientNameInput.value = 'Samuel Baer';
+            }
+            const birthDateInput = document.getElementById('birthDate');
+            if (!birthDateInput.value) {
+                // Setze Geburtsdatum auf 1994-10-14 (YYYY-MM-DD Format für input type="date")
+                birthDateInput.value = '1994-10-14';
+            }
+            const birthPlaceInput = document.getElementById('birthPlace');
+            if (!birthPlaceInput.value) {
+                birthPlaceInput.value = 'Oberkirch, Schweiz'; // Annahme, da Oberkirch als aktueller Ort bekannt ist
+            }
+        });
+
+
+        function generateReading() {
+            // Eingabewerte sammeln
+            const name = document.getElementById('clientName').value.trim();
+            const birthDate = document.getElementById('birthDate').value;
+            const birthPlace = document.getElementById('birthPlace').value.trim();
+            const hdType = document.getElementById('hdType').value;
+            const authority = document.getElementById('authority').value;
+            const profile = document.getElementById('profile').value;
+
+            // Validierung
+            if (!name || !birthDate || !birthPlace || !hdType || !authority || !profile) {
+                showStatus('Bitte füllen Sie alle Pflichtfelder aus.', 'error');
+                return;
+            }
+
+            if (Object.keys(textModules).length === 0) {
+                showStatus('Textmodule nicht geladen. Bitte versuchen Sie es erneut.', 'error');
+                return;
+            }
+
+            // Loading anzeigen
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('generatedText').value = '';
+            document.getElementById('exportBtn').style.display = 'none'; // Export Button verstecken während der Generierung
+
+            // Simuliere kurze Verarbeitungszeit
+            setTimeout(() => {
+                // Definierte Zentren sammeln
+                const definedCenters = [];
+                const undefinedCenters = [];
+
+                const centerCheckboxes = document.querySelectorAll('.centers-grid input[type="checkbox"]');
+                const allCenterKeys = Object.keys(textModules.centers); // Alle möglichen Zentren aus den Textmodulen
+
+                centerCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        definedCenters.push(checkbox.value);
+                    }
+                });
+
+                // Ermittle undefinierte Zentren basierend auf allen möglichen Zentren abzüglich der definierten
+                allCenterKeys.forEach(centerKey => {
+                    if (!definedCenters.includes(centerKey)) {
+                        undefinedCenters.push(centerKey);
+                    }
+                });
+
+                // Geburtsdatum formatieren
+                const date = new Date(birthDate);
+                // Option für toLocaleDateString, um das Datum korrekt für DE/CH zu formatieren
+                const formattedDate = date.toLocaleDateString('de-CH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+
+                // Text zusammenstellen
+                let reading = '';
+
+                // Einleitung
+                reading += replaceVariables(textModules.introduction.default, {
+                    name: name,
+                    birthdate: formattedDate, // Hier geändert zu birthdate, um Konsistenz mit Platzhalter zu haben
+                    birthplace: birthPlace // Hier geändert zu birthplace
+                });
+
+                reading += '\n\n';
+
+                // Typ
+                if (textModules.types[hdType]) {
+                    reading += textModules.types[hdType];
+                    reading += '\n\n';
+                }
+
+                // Autorität
+                if (textModules.authorities[authority]) {
+                    reading += textModules.authorities[authority];
+                    reading += '\n\n';
+                }
+
+                // Profil
+                if (textModules.profiles[profile]) {
+                    reading += textModules.profiles[profile];
+                    reading += '\n\n';
+                }
+
+                // Zentren
+                reading += 'DEINE ZENTREN:\n\n';
+
+                // Definierte Zentren
+                if (definedCenters.length > 0) {
+                    reading += 'Definierte Zentren:\n';
+                    definedCenters.forEach(center => {
+                        if (textModules.centers[center] && textModules.centers[center].defined) {
+                            reading += textModules.centers[center].defined + '\n\n';
+                        }
+                    });
+                }
+
+                // Offene Zentren
+                if (undefinedCenters.length > 0) {
+                    reading += 'Offene Zentren:\n';
+                    undefinedCenters.forEach(center => {
+                        if (textModules.centers[center] && textModules.centers[center].undefined) {
+                            reading += textModules.centers[center].undefined + '\n\n';
+                        }
+                    });
+                }
+
+                // Abschluss
+                reading += textModules.conclusion;
+
+                // Finales Text-Replacement (sicherstellen, dass alle Platzhalter ersetzt sind)
+                reading = replaceVariables(reading, {
+                    name: name,
+                    birthdate: formattedDate,
+                    birthplace: birthPlace,
+                    hdtype: getTypeDisplayName(hdType), // Platzhalter in Kleinbuchstaben
+                    authority: getAuthorityDisplayName(authority) // Platzhalter in Kleinbuchstaben
+                });
+
+                // Text anzeigen
+                document.getElementById('generatedText').value = reading;
+                document.getElementById('exportBtn').style.display = 'block';
+                document.getElementById('loading').classList.remove('show');
+
+                showStatus('Reading erfolgreich generiert!', 'success');
+            }, 1000);
+        }
+
+        // Funktion zum Ersetzen von Variablen in einem Text
+        function replaceVariables(text, variables) {
+            let result = text;
+            for (const key in variables) {
+                if (variables.hasOwnProperty(key)) {
+                    // Verwende RegExp, um alle Vorkommen zu ersetzen, Gross-/Kleinschreibung ignorieren
+                    const placeholder = new RegExp(`\\[${key.toUpperCase()}\\]`, 'g');
+                    result = result.replace(placeholder, variables[key]);
+                }
+            }
+            return result;
+        }
+
+
+        function getTypeDisplayName(type) {
+            const typeNames = {
+                'manifestor': 'Manifestor',
+                'generator': 'Generator',
+                'manifesting-generator': 'Manifestierender Generator',
+                'projektor': 'Projektor',
+                'reflektor': 'Reflektor'
+            };
+            return typeNames[type] || type;
+        }
+
+        function getAuthorityDisplayName(authority) {
+            const authorityNames = {
+                'sakral': 'Sakrale Autorität',
+                'solar-plexus': 'Emotionale Autorität',
+                'milz': 'Milz-Autorität',
+                'herz': 'Herz-Autorität',
+                'lunar': 'Lunare Autorität',
+                'mental': 'Mentale Autorität',
+                'umwelt': 'Umwelt-Autorität'
+            };
+            return authorityNames[authority] || authority;
+        }
+
+        function exportText() {
+            const text = document.getElementById('generatedText').value;
+            const name = document.getElementById('clientName').value.trim() || 'Reading';
+
+            if (!text) {
+                showStatus('Kein Text zum Exportieren vorhanden.', 'error');
+                return;
+            }
+
+            // Text-Datei erstellen und downloaden
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Human_Design_Reading_${name.replace(/\s+/g, '_')}.txt`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showStatus('Text-Datei wurde heruntergeladen!', 'success');
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
