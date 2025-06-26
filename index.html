@@ -169,13 +169,22 @@
             border-radius: 6px;
             border: 1px solid var(--color-border);
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            /* NEU: Cursor zum Klick-Indikator ändern */
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        /* NEU: Hover-Effekt für klickbare Checkbox-Container */
+        .center-item:hover {
+            background-color: var(--color-background-light);
         }
 
         .center-item input[type="checkbox"] {
             width: 16px;
             height: 16px;
             accent-color: var(--color-primary);
-            cursor: pointer;
+            /* NEU: Wichtig, damit der Klick auf den Container funktioniert */
+            pointer-events: none;
         }
 
         .center-item label {
@@ -248,7 +257,6 @@
             margin-bottom: 15px;
         }
 
-        /* NEU: Styling für den DIV-Container, der die Textarea ersetzt */
         #geminiTips {
             width: 100%;
             flex-grow: 1;
@@ -261,10 +269,9 @@
             background: transparent;
             color: var(--color-notes);
             margin-bottom: 15px;
-            overflow-y: auto; /* Scrollbar, falls der Inhalt zu lang wird */
+            overflow-y: auto;
         }
 
-        /* NEU: Styling für die vom Markdown generierten HTML-Tags */
         #geminiTips h1, #geminiTips h2, #geminiTips h3 {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: var(--color-notes);
@@ -344,7 +351,6 @@
                 border-right: none;
                 border-bottom: 2px solid var(--color-background-light);
             }
-
             .tips-section {
                 border-bottom: none;
             }
@@ -354,15 +360,12 @@
             .header h1 {
                 font-size: 2em;
             }
-
             .input-section, .output-section, .tips-section {
                 padding: 20px;
             }
-
             .centers-grid {
                 grid-template-columns: 1fr;
             }
-
             .container {
                 width: 98%;
             }
@@ -375,15 +378,35 @@
             font-weight: 600;
             padding: 15px;
         }
-
-        .loading.show {
-            display: block;
-        }
-
+        .loading.show { display: block; }
         .loading.notes {
             color: var(--color-notes);
             font-family: 'Kalam', cursive;
             font-weight: 400;
+        }
+        /* Style für Google Places Autocomplete Dropdown */
+        .pac-container {
+            background-color: #FFF;
+            z-index: 1050 !important;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            border: 1px solid #ddd;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .pac-item {
+            padding: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            border-top: 1px solid #f0f0f0;
+        }
+        .pac-item:first-child {
+            border-top: none;
+        }
+        .pac-item:hover {
+            background-color: var(--color-background-light);
+        }
+        .pac-item-query {
+            font-weight: 600;
         }
     </style>
 </head>
@@ -391,16 +414,16 @@
     <div class="container">
         <div class="header">
             <h1>Human Design Text-Generator</h1>
-            <p>Erstelle personalisierte Human Design Readings mit AI-Tipps</p>
+            <p>Dein Hilfsmittel für die Readingvorbereitung</p>
         </div>
 
         <div class="main-content">
             <div class="input-section">
                 <h2 class="section-title">Persönliche Daten</h2>
-                <!-- ... Input fields remain the same ... -->
                 <div class="form-group">
                     <label for="clientName">Name der Person:</label>
-                    <input type="text" id="clientName" placeholder="Vollständiger Name eingeben" value="[Dein Name]">
+                    <!-- NEU: onfocus="this.select()" hinzugefügt -->
+                    <input type="text" id="clientName" placeholder="Vollständiger Name eingeben" onfocus="this.select()">
                 </div>
                 <div class="form-group">
                     <label for="birthDate">Geburtsdatum:</label>
@@ -408,7 +431,8 @@
                 </div>
                 <div class="form-group">
                     <label for="birthPlace">Geburtsort:</label>
-                    <input type="text" id="birthPlace" placeholder="Stadt, Land" value="Oberkirch, Schweiz">
+                    <!-- NEU: onfocus="this.select()" hinzugefügt -->
+                    <input type="text" id="birthPlace" placeholder="Stadt, Land" onfocus="this.select()">
                 </div>
                 <h2 class="section-title">Human Design Parameter</h2>
                 <div class="form-group">
@@ -482,27 +506,45 @@
             <div class="tips-section">
                 <h2 class="section-title">Tipps für dein Meeting</h2>
                 <div class="loading notes" id="geminiLoading">Erstelle Meeting-Tipps...</div>
-
-                <!-- GEÄNDERT: Textarea durch DIV ersetzt, um HTML-Rendering zu ermöglichen -->
                 <div id="geminiTips">
                     <p class="placeholder">Hier erscheinen die personalisierten Tipps für dein Meeting...</p>
                 </div>
-
                 <button class="btn btn-notes" onclick="getTipsFromGemini()" id="geminiBtn" style="display: none;">Meeting-Tipps erstellen</button>
                 <div id="geminiStatus"></div>
             </div>
         </div>
     </div>
 
+    <!-- NEU: Google Maps API Script. Ersetze DEIN_GOOGLE_MAPS_API_KEY mit deinem Schlüssel -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBu2MPhKPa9SM07N6qIQEjwLDAY3weOzFY&libraries=places&callback=initAutocomplete"></script>
+
     <script>
         let textModules = {};
-        // WICHTIG: Füge hier deinen Gemini API-Schlüssel ein.
-        // Lasse ihn nicht im öffentlichen Code stehen, wenn die Seite live geht.
-        const GEMINI_API_KEY = 'AIzaSyCgU-SABA5q9_J7YiVqHpg2KGqkxZ2tcVc'; // Dein API-Schlüssel
+        const GEMINI_API_KEY = 'AIzaSyCgU-SABA5q9_J7YiVqHpg2KGqkxZ2tcVc'; // Dein Gemini API-Schlüssel
 
-        // ... (loadTextModules, generateReading etc.) ...
+        // NEU: Funktion zur Initialisierung von Google Maps Autocomplete
+        function initAutocomplete() {
+            const input = document.getElementById('birthPlace');
+            const autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ['(cities)'] // Beschränkt die Suche auf Städte
+            });
+            console.log('Google Maps Autocomplete initialisiert.');
+        }
 
-        document.addEventListener('DOMContentLoaded', loadTextModules);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTextModules();
+
+            // NEU: Logik, um die Checkboxen beim Klick auf den Container zu schalten
+            const centerItems = document.querySelectorAll('.center-item');
+            centerItems.forEach(item => {
+                item.addEventListener('click', (event) => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                    }
+                });
+            });
+        });
 
         async function loadTextModules() {
             try {
@@ -511,7 +553,7 @@
                 textModules = await response.json();
                 console.log('Textmodule erfolgreich geladen.');
 
-                // Setze Samuel's Daten als Standardwerte
+                // Setze Standardwerte (du kannst dies anpassen oder entfernen)
                 document.getElementById('clientName').value = 'Samuel Baer';
                 document.getElementById('birthDate').value = '1994-10-14';
                 document.getElementById('birthPlace').value = 'Oberkirch, Schweiz';
@@ -523,7 +565,6 @@
         }
 
         function generateReading() {
-            // ... (Sammeln der Daten und Validierung wie bisher)
             const name = document.getElementById('clientName').value.trim();
             const birthDate = document.getElementById('birthDate').value;
             const birthPlace = document.getElementById('birthPlace').value.trim();
@@ -540,12 +581,10 @@
             document.getElementById('generatedText').value = '';
             document.getElementById('exportBtn').style.display = 'none';
             document.getElementById('geminiBtn').style.display = 'none';
-            // NEU: Placeholder für Tipps zurücksetzen
             document.getElementById('geminiTips').innerHTML = '<p class="placeholder">Hier erscheinen die personalisierten Tipps für dein Meeting...</p>';
 
 
             setTimeout(() => {
-                 // Definierte Zentren sammeln
                 const definedCenters = [];
                 const undefinedCenters = [];
                 const centerCheckboxes = document.querySelectorAll('.centers-grid input[type="checkbox"]');
@@ -559,7 +598,6 @@
 
                 const formattedDate = new Date(birthDate).toLocaleDateString('de-CH', { year: 'numeric', month: 'long', day: 'numeric' });
 
-                // Text zusammenstellen (gleiche Logik wie vorher)
                 let reading = replaceVariables(textModules.introduction.default, { name, birthdate: formattedDate, birthplace: birthPlace }) + '\n\n';
                 if (textModules.types[hdType]) reading += textModules.types[hdType] + '\n\n';
                 if (textModules.authorities[authority]) reading += textModules.authorities[authority] + '\n\n';
@@ -584,32 +622,22 @@
                 document.getElementById('geminiBtn').style.display = 'block';
                 document.getElementById('loading').classList.remove('show');
                 showStatus('Reading erfolgreich generiert!', 'success');
-
-                // Automatisch Gemini-Tipps anfordern
                 setTimeout(getTipsFromGemini, 500);
             }, 500);
         }
 
-        // NEU: Funktion zur Konvertierung von einfachem Markdown in HTML
         function markdownToHtml(text) {
             let html = text
-                // Fett
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                // Überschriften
                 .replace(/^### (.*$)/gim, '<h3>$1</h3>')
                 .replace(/^## (.*$)/gim, '<h2>$1</h2>')
                 .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-                 // Listenpunkte
                 .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
-                .replace(/<\/ul>\s?<ul>/g, '') // Kombiniere aufeinanderfolgende Listen
-                // Nummerierte Listenpunkte
+                .replace(/<\/ul>\s?<ul>/g, '')
                 .replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>')
-                .replace(/<\/ol>\s?<ol>/g, '') // Kombiniere aufeinanderfolgende nummerierte Listen
-                // Absätze für Zeilen, die nicht mit einem speziellen Tag beginnen
+                .replace(/<\/ol>\s?<ol>/g, '')
                 .replace(/^(?!<[hH1-3uUoO])(.*?)$/gim, '<p>$1</p>')
-                // Leere Absätze entfernen
                 .replace(/<p>\s*<\/p>/g, '')
-                 // Zeilenumbrüche innerhalb von Absätzen
                 .replace(/\n/g, '<br>');
 
             return html;
@@ -687,7 +715,6 @@ Schreibe die Tipps in einem persönlichen, unterstützenden Ton direkt an Sarah 
 
                 if (data.candidates?.[0]?.content) {
                     const rawText = data.candidates[0].content.parts[0].text;
-                    // NEU: Konvertiere Markdown zu HTML
                     const formattedHtml = markdownToHtml(rawText);
                     document.getElementById('geminiTips').innerHTML = formattedHtml;
                     showGeminiStatus('Meeting-Tipps erfolgreich erstellt!', 'success');
@@ -722,7 +749,6 @@ Schreibe die Tipps in einem persönlichen, unterstützenden Ton direkt an Sarah 
 
         function exportText() {
             const text = document.getElementById('generatedText').value;
-            // NEU: Nimmt innerText aus dem DIV, um reinen Text ohne HTML-Tags zu exportieren
             const tips = document.getElementById('geminiTips').innerText;
             const name = document.getElementById('clientName').value.trim() || 'Reading';
 
